@@ -48,8 +48,12 @@ class SharedFolder extends \Nethgui\Controller\TableController
             ->addTableAction(new \Nethgui\Controller\Table\Help('Help'))
             ->addRowActionPluggable(new SharedFolder\Modify('update'))
             ->addRowAction(new SharedFolder\ResetPermissions())
-            ->addRowAction(new SharedFolder\Modify('delete'))
         ;
+        $vhostsDb = $this->getPlatform()->getDatabase('vhosts');
+        if ($vhostsDb) {
+            $this->addRowAction(new SharedFolder\MigrateVhost());
+        }
+        $this->addRowAction(new SharedFolder\Modify('delete'));
         parent::initialize();
     }
 
@@ -66,6 +70,9 @@ class SharedFolder extends \Nethgui\Controller\TableController
     public function prepareViewForColumnActions(\Nethgui\Controller\Table\Read $action, \Nethgui\View\ViewInterface $view, $key, $values, &$rowMetadata)
     {
         $cellView = $action->prepareViewForColumnActions($view, $key, $values, $rowMetadata);
+        if (!isset($values['HttpStatus']) || $values['HttpStatus'] == 'disabled' ||  $values['HttpVirtualHost'] == '__ANY__') {
+            unset($cellView['migrate-vhost']);
+        }
         if (isset($values['Removable']) && $values['Removable'] === 'no') {
             unset($cellView['delete']);
         }
